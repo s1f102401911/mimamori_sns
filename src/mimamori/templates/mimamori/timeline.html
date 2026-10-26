@@ -13,14 +13,21 @@
 
         <!-- 右側アクション・ステータス -->
         <div class="d-flex align-items-center gap-2">
-            <!-- 見守り中ステータスバッジ（Bootstrap Iconを使用） -->
-            <span class="badge bg-light text-success border border-success rounded-pill px-2 py-1 small d-inline-flex align-items-center">
-                <i class="bi bi-circle-fill text-success me-1" style="font-size: 0.5rem;"></i>
-                <span>見守り中</span>
-            </span>
+            <!-- ロールバッジ表示 -->
+            {% if request.user.is_authenticated %}
+                {% if request.user.role == 'elderly' or request.user.role == 'A' %}
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1 small">
+                        <i class="bi bi-person-fill me-1"></i>本人（シニア）
+                    </span>
+                {% else %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 small">
+                        <i class="bi bi-heart-pulse-fill me-1"></i>見守り家族
+                    </span>
+                {% endif %}
+            {% endif %}
 
             <!-- 通知ベルアイコン（未読バッジ付き仮ボタン） -->
-            <button type="button" class="btn btn-light position-relative rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;" onclick="alert('お知らせ：本日の安否確認が届いています')">
+            <button type="button" class="btn btn-light position-relative rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;" onclick="alert('お知らせ：本日の安否確認ステータスを更新しました')">
                 <i class="bi bi-bell-fill text-secondary fs-6"></i>
                 <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
                     <span class="visually-hidden">未読通知あり</span>
@@ -32,65 +39,29 @@
 {% endblock %}
 
 {% block content %}
-<div class="container py-4" style="max-width: 680px; padding-bottom: 90px;">
+<div class="container px-4" style="max-width: 680px; padding-bottom: 120px;">
 
-    <!-- 1. ヘッダー＆本日の安否ステータスカード -->
-    <div class="card shadow-sm border-0 rounded-4 mb-4 bg-light">
-        <div class="card-body p-4 text-center">
-            <h1 class="h4 font-weight-bold mb-3 text-dark">本日の見守りステータス</h1>
-            
-            <!-- 安否未確認（未投稿）時の表示エリア -->
-            <div id="todayStatusPending">
-                <span class="badge bg-warning text-dark fs-6 px-3 py-2 mb-3 rounded-pill">
-                    今日の安否確認：未完了
-                </span>
-                <h2 class="h5 fw-bold text-secondary mb-2">今日はまだ投稿していません</h2>
-                <p class="text-muted small mb-3">写真を投稿するか、「今日は投稿しない」ボタンで無事を知らせましょう！</p>
-                
-                <!-- 投稿アクションフォーム -->
-                <form id="uploadForm" class="p-3 bg-white rounded-3 border">
-                    {% csrf_token %}
-                    
-                    <!-- ① 写真選択エリア -->
-                    <div class="mb-3">
-                        <label for="photo" class="form-label fw-bold text-start d-block">日常の写真を撮影・選択</label>
-                        <input type="file" id="photo" class="form-control form-control-lg" accept="image/png, image/jpeg">
-                    </div>
-
-                    <!-- ② 投稿＆スキップボタン -->
-                    <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
-                        <!-- 写真投稿ボタン -->
-                        <button type="button" id="submitBtn" class="btn btn-primary btn-lg px-4 rounded-pill">
-                            <i class="bi bi-camera-fill me-1"></i> 写真を投稿する
-                        </button>
-                        
-                        <!-- スルーボタン（バックエンド未実装時は仮配置） -->
-                        <button type="button" id="skipBtn" class="btn btn-outline-secondary btn-lg px-4 rounded-pill" onclick="alert('「今日は投稿しない」を家族に送信しました（仮）')">
-                            今日は投稿しない
-                        </button>
-                    </div>
-                </form>
-            </div>
-            
-            <!-- ※写真投稿またはスキップ完了時に切り替える領域（将来用） -->
-            <!-- 
-            <div id="todayStatusComplete" class="d-none">
-                <span class="badge bg-success fs-6 px-3 py-2 mb-2 rounded-pill">
-                    <i class="bi bi-check-circle-fill me-1"></i> 本日の安否確認：完了
-                </span>
-                <p class="text-muted mb-0">今日もが無事が確認できました！</p>
-            </div> 
-            -->
-        </div>
-    </div>
+    <!-- 1. ロール別：本日の安否ステータス＆アクションカード-->
+    {% if request.user.is_authenticated %}
+        {% if request.user.role == 'elderly' or request.user.role == 'A' %}
+            {% include 'mimamori/components/_elderly_status_card.html' %}
+        {% else %}
+            {% include 'mimamori/components/_family_status_card.html' %}
+        {% endif %}
+    {% else %}
+        <!-- 未ログイン時はプレビューとして家族向け見守りカードを表示 -->
+        {% include 'mimamori/components/_family_status_card.html' %}
+    {% endif %}
 
     <!-- 2. タイムライン（過去の安否確認・投稿ログ） -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3 class="h5 fw-bold mb-0 text-dark">タイムライン</h3>
+    <div id="feedSection" class="d-flex justify-content-between align-items-center mb-3 pt-2">
+        <h3 class="h5 fw-bold mb-0 text-dark">
+            <i class="bi bi-images text-primary me-2"></i>タイムライン
+        </h3>
         <span class="text-muted small">最新順</span>
     </div>
 
-    <!-- ペア絞り込み / ペア未設定アラート（入力側機能の統合） -->
+    <!-- ペア絞り込み / ペア未設定アラート -->
     {% if user_pair %}
         <div class="card border-0 bg-white shadow-sm rounded-3 p-2 mb-3">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
@@ -117,7 +88,7 @@
         <div class="alert alert-warning border-0 shadow-sm rounded-3 d-flex align-items-center mb-3 py-2 px-3">
             <i class="bi bi-exclamation-triangle-fill fs-5 me-2 text-warning"></i>
             <div>
-                <strong>ペアがいません！！！</strong>
+                <strong>ペアがいません</strong>
                 <span class="small d-block text-muted">ペアを登録すると、相手の投稿だけを絞り込んで確認できます。</span>
             </div>
         </div>
@@ -149,7 +120,25 @@
 
                     <!-- 投稿画像 -->
                     <div class="text-center bg-dark">
-                        <img src="{{ item.image.url }}" alt="投稿画像" class="img-fluid w-100" style="max-height: 500px; object-fit: contain;">
+                        <img src="{{ item.image.url }}" alt="投稿画像" class="img-fluid w-100" data-bs-toggle="modal" data-bs-target="#imageModal-{{ forloop.counter }}" style="max-height: 500px; object-fit: contain;">
+                    </div>
+
+                    <!-- 拡大Modal -->
+                    <div class="modal fade" id="imageModal-{{ forloop.counter }}" tabindex="-1" aria-labelledby="imageModalLabel-{{ forloop.counter }}" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-lg">
+                        <div class="modal-content">
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="imageModalLabel-{{ forloop.counter }}">拡大画像</h1>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <img src="{{ item.image.url }}" alt="投稿画像" class="img-fluid">
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                        </div>
+                    </div>
                     </div>
 
                     <!-- 投稿キャプション（将来用） -->
@@ -157,10 +146,19 @@
                         <p class="card-text text-dark">テレビを見ながらお茶を飲んでいます <i class="bi bi-cup-hot-fill text-secondary ms-1"></i></p>
                     </div>
 
-                    <!-- 家族からのリアクション・コメント欄（デザインのみ配置） -->
+                    <!-- 家族からのリアクション・コメント欄 -->
                     <div class="card-footer bg-light border-0 p-3">
-                        <div class="d-flex align-items-center mb-2">
-                            <span class="fw-bold text-secondary small me-2">家族からのメッセージ:</span>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="fw-bold text-secondary small">家族からのメッセージ:</span>
+                            <!-- クイックスタンプボタン（家族側が押しやすい仮UI） -->
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" onclick="alert('スタンプ「元気そうで安心！」を送信しました')">
+                                    👍 安心！
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" onclick="alert('スタンプ「いいね！」を送信しました')">
+                                    🍵 いいね
+                                </button>
+                            </div>
                         </div>
                         
                         <!-- コメントリスト（サンプル表示） -->
@@ -171,7 +169,7 @@
                         <!-- 返信入力フォーム（デザインのみ） -->
                         <div class="input-group input-group-sm mt-2">
                             <input type="text" class="form-control" placeholder="返信メッセージを入力...">
-                            <button class="btn btn-outline-primary" type="button">送信</button>
+                            <button class="btn btn-outline-primary" type="button" onclick="alert('メッセージを送信しました（仮）')">送信</button>
                         </div>
                     </div>
                 </div>
@@ -217,49 +215,6 @@
     </div>
 
 </div>
-
-<script>
-    const button = document.getElementById("submitBtn");
-    button.addEventListener("click", async () => {
-        const fileInput = document.getElementById("photo");
-        const token = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-        // ファイルが選択されているかチェック
-        if (fileInput.files.length === 0) {
-            alert("ファイルを選択してください");
-            return;
-        }
-
-        // FormDataを使って画像ファイルを含めたデータを構築
-        const formData = new FormData();
-        formData.append("photo", fileInput.files[0]); // 実際のファイルオブジェクトを追加
-
-        try {
-            const response = await fetch("{% url 'mimamori:photo' %}", {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': token
-                },
-                body: formData
-            });
-
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-
-            const data = await response.json();
-            if (data.success === true) {
-                alert("アップロード成功しました！");
-                location.reload();
-            } else {
-                alert("登録に失敗しました。もう一度やり直してください");
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            alert("通信エラーが発生しました");
-        }
-    });
-</script>
 {% endblock %}
 
 {% block footer %}
@@ -271,6 +226,14 @@
             <i class="bi bi-house-door-fill fs-5 mb-1"></i>
             <span class="fw-bold" style="font-size: 0.75rem;">タイムライン</span>
         </a>
+
+        <!-- 家族専用タブ導線（家族ログイン時）またはプロフィール -->
+        {% if request.user.role == 'family' or request.user.role == 'B' %}
+            <a href="#" class="btn btn-link text-secondary text-decoration-none d-flex flex-column align-items-center py-1 px-3" onclick="alert('見守り詳細設定（準備中）'); return false;">
+                <i class="bi bi-gear fs-5 mb-1"></i>
+                <span style="font-size: 0.75rem;">見守り設定</span>
+            </a>
+        {% endif %}
 
         <!-- プロフィール（はりぼて） -->
         <a href="#" class="btn btn-link text-secondary text-decoration-none d-flex flex-column align-items-center py-1 px-3" onclick="alert('プロフィール画面（準備中）'); return false;">

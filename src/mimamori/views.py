@@ -30,10 +30,17 @@ def timeline(request):
     context = {}
     pairs = get_pairs(request.user) if request.user.is_authenticated else []
     context["user_pair"] = pairs
-    photos = Photo.objects.order_by("created_at")
-    if request.GET.get('filter') == "pair":
-         photos = photos.filter(posted_user__in=[u for u in pairs])
+    photos = Photo.objects.order_by("-created_at")
+    if request.GET.get("filter") == "pair":
+        photos = photos.filter(posted_user__in=[u for u in pairs])
     context["photos"] = photos
+
+    # 見守り・家族用：ペアの最新安否投稿状況
+    latest_pair_photo = None
+    if pairs:
+        latest_pair_photo = Photo.objects.filter(posted_user__in=pairs).order_by("-created_at").first()
+    context["latest_pair_photo"] = latest_pair_photo
+
     return render(request, "mimamori/timeline.html", context)
 
 def postPhotoAPI(request):

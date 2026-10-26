@@ -1,0 +1,92 @@
+<!-- 1. 高齢者用：本日の安否ステータス＆投稿カード -->
+<div class="card shadow-sm border-0 rounded-4 mb-4 bg-light">
+    <div class="card-body p-4 text-center">
+        <h1 class="h4 font-weight-bold mb-3 text-dark">本日の見守りステータス</h1>
+        
+        <!-- 安否未確認（未投稿）時の表示エリア -->
+        <div id="todayStatusPending">
+            <span class="badge bg-warning text-dark fs-6 px-3 py-2 mb-3 rounded-pill">
+                今日の安否確認：未完了
+            </span>
+            <h2 class="h5 fw-bold text-secondary mb-2">今日はまだ投稿していません</h2>
+            <p class="text-muted small mb-3">写真を投稿するか、「今日は投稿しない」ボタンで無事を知らせましょう！</p>
+            
+            <!-- 投稿アクションフォーム -->
+            <form id="uploadForm" class="p-3 bg-white rounded-3 border">
+                {% csrf_token %}
+                
+                <!-- ① 写真選択エリア -->
+                <div class="mb-3">
+                    <label for="photo" class="form-label fw-bold text-start d-block fs-5">日常の写真を撮影・選択</label>
+                    <input type="file" id="photo" class="form-control form-control-lg" accept="image/png, image/jpeg">
+                </div>
+
+                <!-- ② 投稿＆スキップボタン -->
+                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center pt-2">
+                    <!-- 写真投稿ボタン -->
+                    <button type="button" id="submitBtn" class="btn btn-primary btn-lg px-4 rounded-pill shadow-sm py-2">
+                        <i class="bi bi-camera-fill me-2 fs-5"></i> 写真を投稿する
+                    </button>
+                    
+                    <!-- スルーボタン（バックエンド未実装時は仮配置） -->
+                    <button type="button" id="skipBtn" class="btn btn-outline-secondary btn-lg px-4 rounded-pill py-2" onclick="alert('「今日は投稿しない」を家族に送信しました（仮）')">
+                        今日は投稿しない
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const button = document.getElementById("submitBtn");
+        if (!button) return;
+
+        button.addEventListener("click", async () => {
+            const fileInput = document.getElementById("photo");
+            const tokenInput = document.querySelector("[name=csrfmiddlewaretoken]");
+            const token = tokenInput ? tokenInput.value : "";
+
+            if (!fileInput || fileInput.files.length === 0) {
+                alert("写真を選択してください");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("photo", fileInput.files[0]);
+
+            button.disabled = true;
+            button.innerHTML = "<span class='spinner-border spinner-border-sm me-2' role='status'></span>送信中...";
+
+            try {
+                const response = await fetch("{% url 'mimamori:photo' %}", {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": token
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error("Network response was not ok");
+                }
+
+                const data = await response.json();
+                if (data.success === true) {
+                    alert("写真の投稿に成功しました！家族に共有されました。");
+                    location.reload();
+                } else {
+                    alert("登録に失敗しました。もう一度やり直してください");
+                    button.disabled = false;
+                    button.innerHTML = "<i class='bi bi-camera-fill me-2 fs-5'></i> 写真を投稿する";
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("通信エラーが発生しました");
+                button.disabled = false;
+                button.innerHTML = "<i class='bi bi-camera-fill me-2 fs-5'></i> 写真を投稿する";
+            }
+        });
+    });
+</script>

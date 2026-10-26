@@ -1,0 +1,148 @@
+<!-- 1. 家族（見守り側）用：見守りステータス＆ダッシュボードカード -->
+<div class="card shadow-sm border-0 rounded-4 mb-4 bg-white overflow-hidden">
+    <!-- カード上部バナー / ステータスヘッダー -->
+    <div class="p-3 bg-primary bg-opacity-10 border-bottom border-primary-subtle d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center">
+            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2" style="width: 36px; height: 36px;">
+                <i class="bi bi-shield-check fs-5"></i>
+            </div>
+            <div>
+                <h2 class="h6 mb-0 fw-bold text-white">
+                    {% if user_pair %}
+                        {% for p in user_pair %}{{ p.name|default:p.account_id }}{% if not forloop.last %}・{% endif %}{% endfor %} の見守り状況
+                    {% else %}
+                        見守りダッシュボード
+                    {% endif %}
+                </h2>
+            </div>
+        </div>
+        <div>
+            {% if latest_pair_photo %}
+                <span class="badge bg-success text-white px-3 py-2 rounded-pill d-inline-flex align-items-center">
+                    <i class="bi bi-check-circle-fill me-1"></i> 本日の安否確認：完了
+                </span>
+            {% else %}
+                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill d-inline-flex align-items-center">
+                    <i class="bi bi-clock-history me-1"></i> 本日の安否確認：待機中
+                </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card-body p-4">
+        {% if user_pair %}
+            {% if latest_pair_photo %}
+                <!-- 安否確認完了時 -->
+                <div class="text-center py-2">
+                    <div class="mb-3">
+                        <i class="bi bi-emoji-smile-fill fs-1 text-success"></i>
+                        <h3 class="h5 fw-bold text-dark mb-1">今日も元気な様子が届いています！</h3>
+                        <p class="text-muted small mb-0">
+                            最新の安否確認: {{ latest_pair_photo.created_at|date:"n月j日 H:i" }}
+                        </p>
+                    </div>
+
+                    <div class="bg-light rounded-3 p-3 mb-3 d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center text-start">
+                            {% if latest_pair_photo.image %}
+                                <img src="{{ latest_pair_photo.image.url }}" alt="最新写真" class="rounded-3 me-3" style="width: 55px; height: 55px; object-fit: cover;">
+                            {% endif %}
+                            <div>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle small mb-1">写真投稿あり</span>
+                                <div class="small text-secondary">「{{ latest_pair_photo.posted_user.name|default:latest_pair_photo.posted_user.account_id }}」から共有されました</div>
+                            </div>
+                        </div>
+                        <a href="#feedSection" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                            写真を見る <i class="bi bi-arrow-down-short"></i>
+                        </a>
+                    </div>
+                </div>
+            {% else %}
+                <!-- 安否未確認・待機中 -->
+                <div class="text-center py-2">
+                    <div class="mb-3">
+                        <span class="d-inline-block p-3 rounded-circle bg-warning bg-opacity-10 text-warning mb-2">
+                            <i class="bi bi-hourglass-split fs-1"></i>
+                        </span>
+                        <h3 class="h5 fw-bold text-dark mb-1">本日の安否確認はまだ行われていません</h3>
+                        <p class="text-muted small mb-0">
+                            設定された時間帯に高齢者側へ通知が送信されます。
+                        </p>
+                    </div>
+
+                    <!-- アクションボタン群 -->
+                    <div class="d-flex justify-content-center gap-2 flex-wrap mt-3">
+                        <button type="button" class="btn btn-outline-primary rounded-pill px-3" onclick="alert('おじいちゃんへ様子伺い通知（プッシュ通知）を送信しました！')">
+                            <i class="bi bi-bell-fill me-1"></i> 様子伺い通知を送る
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary rounded-pill px-3" onclick="alert('電話発信ダイアログ（仮）：090-XXXX-XXXX へ発信')">
+                            <i class="bi bi-telephone-fill me-1"></i> 電話をかける
+                        </button>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- 見守り安心機能クイックアクセス -->
+            <div class="row g-2 mt-2 pt-3 border-top text-center">
+                <div class="col-6">
+                    <div class="p-2 border rounded-3 bg-light">
+                        <div class="small text-muted mb-1"><i class="bi bi-calendar-check text-primary me-1"></i> 今週の確認率</div>
+                        <div class="fw-bold text-dark fs-6">6 / 7 日 <span class="badge bg-success-subtle text-success small">85%</span></div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-2 border rounded-3 bg-light">
+                        <div class="small text-muted mb-1"><i class="bi bi-sliders text-primary me-1"></i> 通知設定</div>
+                        <button type="button" class="btn btn-link btn-sm text-decoration-none p-0 fw-bold" onclick="alert('ファミリーコントロール（遠隔通知時間帯設定）画面（準備中）')">
+                            設定を確認・変更 <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        {% else %}
+            <!-- ペア未登録時 -->
+            <div class="text-center py-3">
+                <i class="bi bi-person-plus-fill text-muted display-4 mb-2 d-block"></i>
+                <h3 class="h5 fw-bold text-dark">見守り対象のペアがまだ登録されていません</h3>
+                <p class="text-muted small mb-3">
+                    高齢者のアカウントとペアリングすることで、安否確認ログや写真を受信できるようになります。
+                </p>
+                <button type="button" id="createPairLinkBtn" class="btn btn-primary rounded-pill px-4" onclick="createInviteLink()">
+                    <i class="bi bi-link-45deg me-1"></i> 招待リンクを作成する
+                </button>
+                <div id="inviteLinkResult" class="mt-3 d-none">
+                    <input type="text" id="inviteLinkInput" class="form-control form-control-sm text-center mb-2" readonly>
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="copyInviteLink()">URLをコピー</button>
+                </div>
+            </div>
+
+            <script>
+                async function createInviteLink() {
+                    const token = document.querySelector("[name=csrfmiddlewaretoken]") ? document.querySelector("[name=csrfmiddlewaretoken]").value : "";
+                    try {
+                        const res = await fetch("{% url 'mimamori:getPairToken' %}", {
+                            method: "POST",
+                            headers: { "X-CSRFToken": token }
+                        });
+                        const data = await res.json();
+                        if (data.success && data.link) {
+                            document.getElementById("inviteLinkInput").value = data.link;
+                            document.getElementById("inviteLinkResult").classList.remove("d-none");
+                        } else {
+                            alert("招待リンクの作成に失敗しました");
+                        }
+                    } catch (e) {
+                        alert("通信エラーが発生しました");
+                    }
+                }
+                function copyInviteLink() {
+                    const copyText = document.getElementById("inviteLinkInput");
+                    copyText.select();
+                    navigator.clipboard.writeText(copyText.value);
+                    alert("招待URLをコピーしました！高齢者側の端末でこのURLを開いてペアリングを完了してください。");
+                }
+            </script>
+        {% endif %}
+    </div>
+</div>
